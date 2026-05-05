@@ -66,41 +66,86 @@ function draw() {
     let lipsOuter = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
     // 嘴唇內圍輪廓特徵點
     let lipsInner = [76, 77, 90, 180, 85, 16, 315, 404, 320, 307, 306, 408, 304, 303, 302, 11, 72, 73, 74, 184];
-    
-    stroke(255, 0, 0); // 設定線條為紅色
-    strokeWeight(1);   // 設定線條粗細為 1
+    // 臉部輪廓特徵點
+    let faceOval = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
     
     // 取得攝影機影像的實際解析度 (避免手機旋轉直向時 p5 預設長寬未更新的問題)
     let vw = capture.elt.videoWidth || capture.width;
     let vh = capture.elt.videoHeight || capture.height;
 
-    // 統一透過迴圈來畫多組連線 (右眼 + 左眼 + 嘴巴)
-    let drawLines = [rightEyeOuter, rightEyeInner, leftEyeOuter, leftEyeInner, lipsOuter, lipsInner];
-    for (let j = 0; j < drawLines.length; j++) {
-      let indices = drawLines[j];
-      
-      // 依序串聯各個點
-      for (let i = 0; i < indices.length - 1; i++) {
-        let p1 = keypoints[indices[i]];
-        let p2 = keypoints[indices[i + 1]];
-        
-        // 將模型的原始影片座標，等比映射到我們畫布顯示的縮放影像範圍內
-        let x1 = map(p1.x, 0, vw, -imgW / 2, imgW / 2);
-        let y1 = map(p1.y, 0, vh, -imgH / 2, imgH / 2);
-        let x2 = map(p2.x, 0, vw, -imgW / 2, imgW / 2);
-        let y2 = map(p2.y, 0, vh, -imgH / 2, imgH / 2);
-        
-        line(x1, y1, x2, y2);
+    // 繪製遮罩，將臉部輪廓以外的影像背景用 #fdf0d5 填滿
+    fill('#fdf0d5');
+    noStroke();
+    beginShape();
+    // 影像的外部邊界 (順時針方向)
+    vertex(-imgW / 2, -imgH / 2);
+    vertex(imgW / 2, -imgH / 2);
+    vertex(imgW / 2, imgH / 2);
+    vertex(-imgW / 2, imgH / 2);
+    
+    // 內部臉部輪廓挖空 (逆時針方向)
+    beginContour();
+    for (let i = faceOval.length - 1; i >= 0; i--) {
+      let p = keypoints[faceOval[i]];
+      let x = map(p.x, 0, vw, -imgW / 2, imgW / 2);
+      let y = map(p.y, 0, vh, -imgH / 2, imgH / 2);
+      vertex(x, y);
+    }
+    endContour();
+    endShape(CLOSE);
+
+    // 將不同部位的連線與樣式設定整理成群組
+    let featureGroups = [
+      {
+        indicesList: [rightEyeInner, leftEyeInner, lipsOuter, lipsInner],
+        col: [255, 0, 0], // 紅色
+        weight: 1         // 粗細 1
+      },
+      {
+        indicesList: [rightEyeOuter, leftEyeOuter],
+        col: [60, 60, 60], // 灰色偏黑 (黑眼圈效果)
+        weight: 15         // 粗細改為 15，讓黑眼圈效果更深更明顯
+      },
+      {
+        indicesList: [faceOval],
+        col: [0, 255, 255], // 螢光藍色
+        weight: 2         // 粗細 2
       }
+    ];
+
+    // 依群組設定套用顏色與粗細，並畫出多組連線
+    for (let g = 0; g < featureGroups.length; g++) {
+      let grp = featureGroups[g];
+      stroke(grp.col[0], grp.col[1], grp.col[2]);
+      strokeWeight(grp.weight);
       
-      // 將最後一個點連回第一個點，讓輪廓完美閉合
-      let pLast = keypoints[indices[indices.length - 1]];
-      let pFirst = keypoints[indices[0]];
-      let xLast = map(pLast.x, 0, vw, -imgW / 2, imgW / 2);
-      let yLast = map(pLast.y, 0, vh, -imgH / 2, imgH / 2);
-      let xFirst = map(pFirst.x, 0, vw, -imgW / 2, imgW / 2);
-      let yFirst = map(pFirst.y, 0, vh, -imgH / 2, imgH / 2);
-      line(xLast, yLast, xFirst, yFirst);
+      let drawLines = grp.indicesList;
+      for (let j = 0; j < drawLines.length; j++) {
+        let indices = drawLines[j];
+        
+        // 依序串聯各個點
+        for (let i = 0; i < indices.length - 1; i++) {
+          let p1 = keypoints[indices[i]];
+          let p2 = keypoints[indices[i + 1]];
+          
+          // 將模型的原始影片座標，等比映射到我們畫布顯示的縮放影像範圍內
+          let x1 = map(p1.x, 0, vw, -imgW / 2, imgW / 2);
+          let y1 = map(p1.y, 0, vh, -imgH / 2, imgH / 2);
+          let x2 = map(p2.x, 0, vw, -imgW / 2, imgW / 2);
+          let y2 = map(p2.y, 0, vh, -imgH / 2, imgH / 2);
+          
+          line(x1, y1, x2, y2);
+        }
+        
+        // 將最後一個點連回第一個點，讓輪廓完美閉合
+        let pLast = keypoints[indices[indices.length - 1]];
+        let pFirst = keypoints[indices[0]];
+        let xLast = map(pLast.x, 0, vw, -imgW / 2, imgW / 2);
+        let yLast = map(pLast.y, 0, vh, -imgH / 2, imgH / 2);
+        let xFirst = map(pFirst.x, 0, vw, -imgW / 2, imgW / 2);
+        let yFirst = map(pFirst.y, 0, vh, -imgH / 2, imgH / 2);
+        line(xLast, yLast, xFirst, yFirst);
+      }
     }
   }
 
