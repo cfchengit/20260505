@@ -60,16 +60,20 @@ function draw() {
     stroke(255, 0, 0); // 設定線條為紅色
     strokeWeight(15);  // 設定線條粗細為 15
     
+    // 取得攝影機影像的實際解析度 (避免手機旋轉直向時 p5 預設長寬未更新的問題)
+    let vw = capture.elt.videoWidth || capture.width;
+    let vh = capture.elt.videoHeight || capture.height;
+
     // 依序串聯各個點
     for (let i = 0; i < indices.length - 1; i++) {
       let p1 = keypoints[indices[i]];
       let p2 = keypoints[indices[i + 1]];
       
       // 將模型的原始影片座標，等比映射到我們畫布顯示的縮放影像範圍內
-      let x1 = map(p1.x, 0, capture.width, -imgW / 2, imgW / 2);
-      let y1 = map(p1.y, 0, capture.height, -imgH / 2, imgH / 2);
-      let x2 = map(p2.x, 0, capture.width, -imgW / 2, imgW / 2);
-      let y2 = map(p2.y, 0, capture.height, -imgH / 2, imgH / 2);
+      let x1 = map(p1.x, 0, vw, -imgW / 2, imgW / 2);
+      let y1 = map(p1.y, 0, vh, -imgH / 2, imgH / 2);
+      let x2 = map(p2.x, 0, vw, -imgW / 2, imgW / 2);
+      let y2 = map(p2.y, 0, vh, -imgH / 2, imgH / 2);
       
       line(x1, y1, x2, y2);
     }
@@ -77,10 +81,10 @@ function draw() {
     // 將最後一個點連回第一個點，讓嘴唇輪廓完美閉合
     let pLast = keypoints[indices[indices.length - 1]];
     let pFirst = keypoints[indices[0]];
-    let xLast = map(pLast.x, 0, capture.width, -imgW / 2, imgW / 2);
-    let yLast = map(pLast.y, 0, capture.height, -imgH / 2, imgH / 2);
-    let xFirst = map(pFirst.x, 0, capture.width, -imgW / 2, imgW / 2);
-    let yFirst = map(pFirst.y, 0, capture.height, -imgH / 2, imgH / 2);
+    let xLast = map(pLast.x, 0, vw, -imgW / 2, imgW / 2);
+    let yLast = map(pLast.y, 0, vh, -imgH / 2, imgH / 2);
+    let xFirst = map(pFirst.x, 0, vw, -imgW / 2, imgW / 2);
+    let yFirst = map(pFirst.y, 0, vh, -imgH / 2, imgH / 2);
     line(xLast, yLast, xFirst, yFirst);
   }
 
