@@ -18,6 +18,12 @@ function draw() {
   // 設定畫布背景顏色為 #e7c6ff
   background('#e7c6ff');
   
+  // 在影像上方的背景區域繪製文字
+  fill(0); // 設定文字顏色為黑色
+  textSize(32); // 設定文字大小
+  textAlign(CENTER, CENTER); // 設定文字對齊方式為左右與上下置中
+  text('教科123456789', width / 2, height * 0.125); // 放置在畫布上方 1/8 處（確保不與影像重疊）
+
   // 計算顯示影像的寬度與高度 (整個畫布寬高的 50%)
   let imgW = width * 0.5;
   let imgH = height * 0.5;
